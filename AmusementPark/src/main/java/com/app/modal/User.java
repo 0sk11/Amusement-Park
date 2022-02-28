@@ -1,4 +1,7 @@
 package com.app.modal;
+import java.util.List;
+
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -19,9 +22,11 @@ public class User {
 	
 	private int id;
 	private String name;
-	private String rideName;
+	@ElementCollection(targetClass=String.class)
+	private List<String> rideName;
 	private int age;
-	private String rideType;
+	@ElementCollection(targetClass=String.class)
+	private List<String> rideType;
 	private int noOfRide;
 	private int totalCost;
 	public int getId() {
@@ -37,10 +42,10 @@ public class User {
 		this.name = name;
 	}
 	
-	public String getRideName() {
+	public List<String> getRideName() {
 		return rideName;
 	}
-	public void setRideName(String rideName) {
+	public void setRideName(List<String> rideName) {
 		this.rideName = rideName;
 	}
 	public int getAge() {
@@ -49,10 +54,10 @@ public class User {
 	public void setAge(int age) {
 		this.age = age;
 	}
-	public String getRideType() {
+	public List<String> getRideType() {
 		return rideType;
 	}
-	public void setRideType(String rideType) {
+	public void setRideType(List<String> rideType) {
 		this.rideType = rideType;
 	}
 	public int getNoOfRide() {

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import com.app.custom.exception.BusinessException;
 import com.app.modal.User;
 import com.app.repository.UserRepository;
 
@@ -17,56 +18,74 @@ public class UserService {
 	@Autowired
 	private UserRepository userRepository;
 	
-	public  ResponseEntity<?> getUsers(){
+	public  List<User> getUsers(){
+		List<User> users = null;
 		try {
-			return new ResponseEntity<List<User>>(userRepository.findAll(),HttpStatus.OK); 
+			users = userRepository.findAll();
+			
 		}catch(Exception e) {
-			return new ResponseEntity<String>("Does Not Exists",HttpStatus.INTERNAL_SERVER_ERROR);
+			throw new BusinessException("605","Something went wrong in Service layer while fetching all users" + e.getMessage());
 		}
+		if(users.isEmpty()) {
+			throw new BusinessException("604", "Users list is empty");
+		}
+		return users;
 	}
 	
-	public ResponseEntity<String> save(User user){
+	public User save(User user){
+		if(user.getName().isEmpty()||user.getName().length()==0) {
+			throw new BusinessException("601","User name is blank");
+		}else if(user.getAge()==0) {
+			throw new BusinessException("601","User age cannot be 0");
+		}else if(user.getNoOfRide()==0) {
+			throw new BusinessException("601","Ride cannot be 0");
+		}else if(user.getRideType().isEmpty()) {
+			throw new BusinessException("601","Ride Type is blank");
+		}else if(user.getRideName().isEmpty()) {
+			 throw new BusinessException("601","Ride name is blank");
+		}
 		try {
-			userRepository.save(user);
-			return new ResponseEntity<String>("Successfully Added",HttpStatus.OK);
-		}catch(Exception e) {
-			return new ResponseEntity<String>("Failed",HttpStatus.INTERNAL_SERVER_ERROR);
+			return userRepository.save(user);
+		}catch(IllegalArgumentException e) {
+			throw new BusinessException("602","Given user is null" + e.getMessage());
+		}catch (Exception e) {
+			throw new BusinessException("602","Something went wrong in service layer" + e.getMessage());
 		}
 		 
 	}
 	
-	public ResponseEntity<?> delete(int id){
+	public void delete(int id){
 		try {
 			userRepository.deleteById(id);
-			return new ResponseEntity<String>("Successfully Deleted",HttpStatus.OK);
-		}catch(Exception e) {
-			return new ResponseEntity<String>("Failed to Delete",HttpStatus.INTERNAL_SERVER_ERROR);
+		}catch(IllegalArgumentException e) {
+			throw new BusinessException("608","Given user id does not exists" + e.getMessage());
+		}catch (Exception e) {
+			throw new BusinessException("610","Something went wrong in Service layer while fetching all employees" + e.getMessage());
 		}
 	}
 	
-	public ResponseEntity<String> edit(User user){
+	public ResponseEntity<String> edit(int id,User user){
 		User existingUser;
-		Optional<User> userFromDB = userRepository.findById(user.getId());
+		Optional<User> userFromDB = userRepository.findById(id);
 		if(userFromDB.isEmpty()){
 			return new ResponseEntity<String>("No such user exits",HttpStatus.OK);
-		}else {
-			existingUser = userFromDB.get();
 		}
+		existingUser = userFromDB.get();
 		
-		if(user.getName()==null) {
-			user.setName(existingUser.getName());
+		if(user.getName()!=null) {
+			existingUser.setName(user.getName());
 		}
-		if(user.getRideType()==null) {
-			user.setRideType(existingUser.getRideType());
+		if(user.getRideType()!=null) {
+			existingUser.setRideType(user.getRideType());
 		}
-		if(user.getAge()== 0) {
-			user.setAge(existingUser.getAge());
+		if(user.getAge()!= 0) {
+			existingUser.setAge(user.getAge());
 		}
-		if(user.getNoOfRide()== 0) {
-			user.setNoOfRide(existingUser.getNoOfRide());
+		if(user.getNoOfRide()!= 0) {
+			existingUser.setNoOfRide(user.getNoOfRide());
 		}
 		try {
-			userRepository.save(user);
+			userRepository.save(existingUser);
 			return new ResponseEntity<String>("Successfully Edited",HttpStatus.OK);
 		}catch(Exception e) {
 			return new ResponseEntity<String>("Failed",HttpStatus.INTERNAL_SERVER_ERROR);

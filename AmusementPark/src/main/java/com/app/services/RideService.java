@@ -3,11 +3,14 @@ package com.app.services;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.event.spi.ResolveNaturalIdEventListener;
+import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import com.app.custom.exception.BusinessException;
 import com.app.modal.Ride;
 import com.app.modal.User;
 import com.app.repository.RideRepository;
@@ -17,36 +20,60 @@ import com.app.repository.RideRepository;
 public class RideService {
 	@Autowired
 	RideRepository rideRepository;
-	public ResponseEntity<?> getRides() {
+	public List<Ride> getRides() {
+		List<Ride> rideList = null;
 		try {
-			return new ResponseEntity<List<Ride>>(rideRepository.findAll(),HttpStatus.OK); 
+			rideList = rideRepository.findAll();
 		}catch(Exception e) {
-			return new ResponseEntity<String>("Does Not Exists",HttpStatus.INTERNAL_SERVER_ERROR);
+			throw new BusinessException("605","Something went wrong in Service layer while fetching all employees" + e.getMessage());
 		}
+		if(rideList.isEmpty()) {
+			throw new BusinessException("604", "Hey list completely empty, we have nothing to return");
+		}
+		return rideList;
 	}
 	
-	public ResponseEntity<?> getRideType(String type) {
+	public List<Ride> getRideType(String type) {
+		List<Ride> rideList = null;
 		try {
-			return new ResponseEntity<List<Ride>>(rideRepository.findByType(type),HttpStatus.OK); 
+			rideList =  rideRepository.findByType(type);
 		}catch(Exception e) {
-			return new ResponseEntity<String>("Does Not Exists",HttpStatus.INTERNAL_SERVER_ERROR);
+			throw new BusinessException("605","Something went wrong in Service layer while fetching all employees" + e.getMessage());
 		}
+		if(rideList.isEmpty()) {
+			throw new BusinessException("604", "Hey list completely empty, we have nothing to return");
+		}
+		
+		return rideList;
 	}
-	public ResponseEntity<String> save(Ride ride){
+	
+	public Ride save(Ride ride){
+		if(ride.getName().isEmpty() || ride.getName().length()==0) {
+			throw new BusinessException("601","Please send proper name, It is blank");
+		}
+		if(ride.getCost()==0) {
+			throw new BusinessException("601","Please send proper cost, It is set to 0");
+		}
+		if(ride.getType().isEmpty()|| ride.getType().length()==0) {
+			throw new BusinessException("601","Please send proper type of ride, It is blank");
+		}
 		try {
-			rideRepository.save(ride);
-			return new ResponseEntity<String>("Successfully Added",HttpStatus.OK);
+			Ride savedRide = rideRepository.save(ride);
+			return savedRide;
+		}catch (IllegalArgumentException e) {
+			throw new BusinessException("602","given Ride is null" + e.getMessage());
 		}catch(Exception e) {
-			return new ResponseEntity<String>("Failed",HttpStatus.INTERNAL_SERVER_ERROR);
+			throw new BusinessException("603","Something went wrong in Service layer while saving the ride" + e.getMessage());
 		}
 		 
 	}
 
-	public ResponseEntity<?> editRide(int id,Ride ride) {
+	public Ride editRide(int id,Ride ride) {
 		// TODO Auto-generated method stub
+		
 		Optional<Ride> rideOptional = rideRepository.findById(id);
-		if(!rideOptional.isPresent()) {
-			return ResponseEntity.notFound().build();
+		if(rideOptional.isEmpty()) {
+			throw new BusinessException("605","Something went wrong in Service layer while fetching ride");
 		}
 		Ride mainRide = rideOptional.get();
 		if(ride.getName()!=null) {
@@ -60,9 +87,8 @@ public class RideService {
 		if(ride.getType()!=null) {
 			mainRide.setType(ride.getType());
 		}
-		
 		rideRepository.save(mainRide);
-		return ResponseEntity.noContent().build();
+		return mainRide;
 	}
 	
 
